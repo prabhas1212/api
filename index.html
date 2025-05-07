@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⚡ Smart Rephraser Pro</title>
   <style>
     :root {
@@ -12,11 +12,7 @@
       --card-bg: rgba(255, 255, 255, 0.98);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -36,7 +32,6 @@
     h2 {
       font-size: 2.5rem;
       margin-bottom: 2rem;
-      color: #1a1a1a;
       text-align: center;
       background: linear-gradient(90deg, #4a6bff, #00c6ff);
       -webkit-background-clip: text;
@@ -45,12 +40,10 @@
     }
 
     .input-section {
-      position: relative;
       margin-bottom: 1.5rem;
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
       border-radius: 12px;
       overflow: hidden;
-      transition: all 0.3s ease;
     }
 
     textarea {
@@ -61,7 +54,6 @@
       border: none;
       background: var(--card-bg);
       resize: none;
-      transition: all 0.3s ease;
       line-height: 1.6;
     }
 
@@ -85,10 +77,10 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      font-weight: 600;
       position: relative;
       overflow: hidden;
-      font-weight: 600;
+      transition: all 0.3s ease;
     }
 
     button:hover {
@@ -97,9 +89,7 @@
       box-shadow: 0 5px 15px rgba(74, 107, 255, 0.4);
     }
 
-    button:active {
-      transform: translateY(0);
-    }
+    button:active { transform: translateY(0); }
 
     button.loading::after {
       content: "";
@@ -150,7 +140,6 @@
 
     #outputText {
       font-size: 1.1rem;
-      line-height: 1.6;
       white-space: pre-wrap;
       animation: textReveal 0.6s ease-out;
     }
@@ -177,45 +166,27 @@
     }
 
     @media (max-width: 768px) {
-      body {
-        padding: 1rem;
-      }
-
-      h2 {
-        font-size: 2rem;
-      }
-
-      textarea {
-        padding: 1rem;
-        min-height: 120px;
-      }
-
-      .controls {
-        flex-direction: column;
-      }
-
-      .output {
-        padding: 1.5rem;
-      }
+      body { padding: 1rem; }
+      h2 { font-size: 2rem; }
+      textarea { padding: 1rem; min-height: 120px; }
+      .controls { flex-direction: column; }
+      .output { padding: 1.5rem; }
     }
 
     @media (max-width: 480px) {
-      button {
-        padding: 0.8rem;
-        font-size: 1rem;
-      }
+      button { padding: 0.8rem; font-size: 1rem; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>⚡ Smart Rephraser Pro</h2>
-    
+
     <div class="input-section">
       <textarea id="inputText" placeholder="Enter your text here..." autofocus></textarea>
       <div class="word-count"><span id="wordCount">0</span> words</div>
     </div>
-    
+
     <div class="progress-container" id="progressContainer">
       <div id="progress"></div>
     </div>
@@ -227,42 +198,36 @@
 
     <div class="output" id="outputSection">
       <h3>Rephrased Output:</h3>
-      <p id="outputText">Your rephrased text will appear here...</p>
+      <pre id="outputText">Your rephrased text will appear here...</pre>
     </div>
   </div>
 
   <script>
-    // Global variables
-    const synonymCache = {};
-    const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
-    const MAX_CHUNK_SIZE = 300; // Optimal balance between performance and responsiveness
-
-    // DOM elements
     const inputText = document.getElementById("inputText");
     const outputText = document.getElementById("outputText");
     const rephraseBtn = document.getElementById("rephraseBtn");
     const copyBtn = document.getElementById("copyBtn");
     const progressBar = document.getElementById("progress");
     const progressContainer = document.getElementById("progressContainer");
+    const outputSection = document.getElementById("outputSection");
     const wordCountDisplay = document.getElementById("wordCount");
 
-    // Initialize
+    const synonymCache = {};
+    const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
+
     inputText.addEventListener("input", updateWordCount);
     updateWordCount();
 
-    // Word counter
     function updateWordCount() {
       const text = inputText.value.trim();
       const count = text ? text.split(/\s+/).length : 0;
       wordCountDisplay.textContent = count;
     }
 
-    // Main rephrasing function
     async function rephraseText() {
-      const text = inputText.value.trim();
-      if (!text) return alert('Please enter some text to rephrase!');
+      const text = inputText.value;
+      if (!text.trim()) return alert("Please enter some text to rephrase!");
 
-      // UI Setup
       rephraseBtn.classList.add("loading");
       rephraseBtn.disabled = true;
       copyBtn.disabled = true;
@@ -270,32 +235,24 @@
       outputSection.classList.remove("visible");
 
       try {
-        // Process in chunks for better performance
-        const chunks = splitIntoChunks(text, MAX_CHUNK_SIZE);
-        let result = [];
-        
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-          const processed = await processChunk(chunk);
-          result.push(processed);
-          
-          // Update progress
-          const progress = ((i + 1) / chunks.length) * 100;
-          progressBar.style.width = `${progress}%`;
-          
-          // Partial output update for better UX
-          if (i % 3 === 0 || i === chunks.length - 1) {
-            outputText.textContent = result.join(" ") + (i < chunks.length - 1 ? "..." : "");
-            outputSection.classList.add("visible");
-            scrollToOutput();
-          }
+        const lines = text.split(/\r?\n/);
+        const total = lines.length;
+        let rephrasedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const rephrased = await processChunk(line);
+          rephrasedLines.push(rephrased);
+          progressBar.style.width = ((i + 1) / total * 100) + "%";
         }
-        
-        outputText.textContent = result.join(" ");
+
+        outputText.textContent = rephrasedLines.join("\n");
         outputSection.classList.add("visible");
+        scrollToOutput();
+
       } catch (error) {
         console.error("Rephrasing error:", error);
-        alert("An error occurred during rephrasing. Please try again.");
+        alert("An error occurred during rephrasing.");
       } finally {
         rephraseBtn.classList.remove("loading");
         rephraseBtn.disabled = false;
@@ -303,75 +260,41 @@
       }
     }
 
-    // Process a single chunk of text
     async function processChunk(text) {
-      // First get all candidate words for replacement
       const words = text.split(/(\w+|\W+)/).filter(Boolean);
-      const wordsToReplace = words.filter(word => {
-        const cleanWord = word.replace(/\W/g, '');
-        return cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase());
+      const toReplace = words.filter(w => {
+        const clean = w.replace(/\W/g, '');
+        return clean.length > 3 && !stopWords.has(clean.toLowerCase());
       });
 
-      // Batch fetch synonyms
-      await fetchSynonymsBatch(wordsToReplace);
+      await fetchSynonymsBatch(toReplace);
 
-      // Process each word with cached synonyms
-      return words.map(word => {
-        const cleanWord = word.replace(/\W/g, '');
-        if (cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase())) {
-          const synonym = synonymCache[cleanWord.toLowerCase()] || word;
-          // Preserve original capitalization
-          return /^[A-Z]/.test(word) ? 
-            synonym.charAt(0).toUpperCase() + synonym.slice(1) : 
-            synonym;
+      return words.map(w => {
+        const clean = w.replace(/\W/g, '');
+        const synonym = synonymCache[clean.toLowerCase()];
+        if (clean.length > 3 && synonym && !stopWords.has(clean.toLowerCase())) {
+          return /^[A-Z]/.test(w) ? synonym.charAt(0).toUpperCase() + synonym.slice(1) : synonym;
         }
-        return word;
+        return w;
       }).join('');
     }
 
-    // Batch fetch synonyms from API
     async function fetchSynonymsBatch(words) {
-      const uniqueWords = [...new Set(words
-        .map(word => word.toLowerCase())
-        .filter(word => !synonymCache[word] && word.length > 3)
-      )];
-
+      const uniqueWords = [...new Set(words.map(w => w.toLowerCase()).filter(w => !synonymCache[w] && w.length > 3))];
       if (uniqueWords.length === 0) return;
 
-      try {
-        // Batch API call (note: Datamuse doesn't support true batching, this is a mock)
-        // In a production app, you'd use a backend service with proper batching
-        const results = await Promise.all(
-          uniqueWords.map(word => 
-            fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
-              .then(res => res.json())
-              .then(data => ({ word, synonym: data[0]?.word || null }))
-              .catch(() => ({ word, synonym: null }))
-          )
-        );
+      const results = await Promise.all(uniqueWords.map(word =>
+        fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
+          .then(res => res.json())
+          .then(data => ({ word, synonym: data[0]?.word || null }))
+          .catch(() => ({ word, synonym: null }))
+      ));
 
-        // Cache results
-        results.forEach(({ word, synonym }) => {
-          if (synonym) synonymCache[word] = synonym;
-        });
-      } catch (error) {
-        console.error("Batch synonym error:", error);
-      }
+      results.forEach(({ word, synonym }) => {
+        if (synonym) synonymCache[word] = synonym;
+      });
     }
 
-    // Helper function to split text into chunks
-    function splitIntoChunks(text, chunkSize) {
-      const words = text.split(/\s+/);
-      const chunks = [];
-      
-      for (let i = 0; i < words.length; i += chunkSize) {
-        chunks.push(words.slice(i, i + chunkSize).join(' '));
-      }
-      
-      return chunks;
-    }
-
-    // UI Helpers
     function scrollToOutput() {
       outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -382,20 +305,16 @@
         alert("Nothing to copy!");
         return;
       }
-      
+
       navigator.clipboard.writeText(text)
         .then(() => {
           copyBtn.textContent = "Copied!";
           setTimeout(() => copyBtn.textContent = "Copy Result", 2000);
         })
-        .catch(err => {
-          console.error("Copy failed:", err);
-          alert("Failed to copy text");
-        });
+        .catch(() => alert("Copy failed."));
     }
 
-    // Auto-expand textarea
-    inputText.addEventListener('input', function() {
+    inputText.addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = this.scrollHeight + 'px';
     });
