@@ -101,57 +101,183 @@
   </div>
 
   <script>
-    async function rephraseContent() {
-      const inputDiv = document.getElementById("inputEditor");
-      const outputDiv = document.getElementById("outputEditor");
-      const content = inputDiv.innerHTML;
+  // Global variables
+  const synonymCache = {};
+  const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
+  const MAX_CHUNK_SIZE = 300; // Optimal balance between performance and responsiveness
 
-      const container = document.createElement("div");
-      container.innerHTML = content;
+  // DOM elements
+  const inputText = document.getElementById("inputText");
+  const outputText = document.getElementById("outputText");
+  const rephraseBtn = document.getElementById("rephraseBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const progressBar = document.getElementById("progress");
+  const progressContainer = document.getElementById("progressContainer");
+  const wordCountDisplay = document.getElementById("wordCount");
 
-      const children = Array.from(container.childNodes);
-      let outputHTML = '';
+  // Initialize
+  inputText.addEventListener("input", updateWordCount);
+  updateWordCount();
 
-      for (const node of children) {
-        if (node.nodeType === Node.ELEMENT_NODE && /^H[1-6]$/.test(node.tagName)) {
-          // Keep heading as is
-          outputHTML += `<${node.tagName}>${node.innerHTML}</${node.tagName}>`;
-        } else if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
-          // Rephrase paragraph content
-          const text = node.textContent.trim();
-          if (text.length > 0) {
-            const rephrased = await mockRephrase(text);
-            outputHTML += `<p>${rephrased}</p>`;
-          }
+  // Word counter
+  function updateWordCount() {
+    const text = inputText.value.trim();
+    const count = text ? text.split(/\s+/).length : 0;
+    wordCountDisplay.textContent = count;
+  }
+
+  // Check if the word is a proper noun, acronym, or number
+  function isSpecialWord(word) {
+    // Checks if the word is a number or contains digits
+    if (/\d/.test(word)) return true;
+    
+    // Checks if it's an acronym or proper noun (capitalized word in the middle of text)
+    return /^[A-Z][a-zA-Z]*$/.test(word) || /^[A-Z]{2,}$/.test(word);
+  }
+
+  // Main rephrasing function
+  async function rephraseText() {
+    const text = inputText.value.trim();
+    if (!text) return alert('Please enter some text to rephrase!');
+
+    // UI Setup
+    rephraseBtn.classList.add("loading");
+    rephraseBtn.disabled = true;
+    copyBtn.disabled = true;
+    progressContainer.style.display = "block";
+    outputSection.classList.remove("visible");
+
+    try {
+      // Process in chunks for better performance
+      const chunks = splitIntoChunks(text, MAX_CHUNK_SIZE);
+      let result = [];
+      
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const processed = await processChunk(chunk);
+        result.push(processed);
+        
+        // Update progress
+        const progress = ((i + 1) / chunks.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        // Partial output update for better UX
+        if (i % 3 === 0 || i === chunks.length - 1) {
+          outputText.textContent = result.join(" ") + (i < chunks.length - 1 ? "..." : "");
+          outputSection.classList.add("visible");
+          scrollToOutput();
         }
       }
-
-      outputDiv.innerHTML = outputHTML;
+      
+      outputText.textContent = result.join(" ");
+      outputSection.classList.add("visible");
+    } catch (error) {
+      console.error("Rephrasing error:", error);
+      alert("An error occurred during rephrasing. Please try again.");
+    } finally {
+      rephraseBtn.classList.remove("loading");
+      rephraseBtn.disabled = false;
+      copyBtn.disabled = false;
     }
+  }
 
-    // Simulated paraphraser (replace with API call)
-    async function mockRephrase(text) {
-      // Mocking API with simple replacement (replace with real AI logic/API)
-      return text
-        .replace(/\bimportant\b/gi, "significant")
-        .replace(/\buse\b/gi, "utilize")
-        .replace(/\bexample\b/gi, "instance");
-    }
+  // Process a single chunk of text
+  async function processChunk(text) {
+    // First get all candidate words for replacement
+    const words = text.split(/(\w+|\W+)/).filter(Boolean);
+    const wordsToReplace = words.filter(word => {
+      const cleanWord = word.replace(/\W/g, '');
+      return cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase()) && !isSpecialWord(word);
+    });
 
-    function copyOutput() {
-      const range = document.createRange();
-      const selection = window.getSelection();
-      const output = document.getElementById("outputEditor");
-      range.selectNodeContents(output);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      try {
-        document.execCommand("copy");
-        alert("Output copied!");
-      } catch (err) {
-        alert("Copy failed!");
+    // Batch fetch synonyms
+    await fetchSynonymsBatch(wordsToReplace);
+
+    // Process each word with cached synonyms
+    return words.map(word => {
+      const cleanWord = word.replace(/\W/g, '');
+      if (cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase()) && !isSpecialWord(word)) {
+        const synonym = synonymCache[cleanWord.toLowerCase()] || word;
+        // Preserve original capitalization
+        return /^[A-Z]/.test(word) ? 
+          synonym.charAt(0).toUpperCase() + synonym.slice(1) : 
+          synonym;
       }
+      return word;
+    }).join(' ');
+  }
+
+  // Batch fetch synonyms from API
+  async function fetchSynonymsBatch(words) {
+    const uniqueWords = [...new Set(words
+      .map(word => word.toLowerCase())
+      .filter(word => !synonymCache[word] && word.length > 3)
+    )];
+
+    if (uniqueWords.length === 0) return;
+
+    try {
+      // Batch API call (note: Datamuse doesn't support true batching, this is a mock)
+      // In a production app, you'd use a backend service with proper batching
+      const results = await Promise.all(
+        uniqueWords.map(word => 
+          fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
+            .then(res => res.json())
+            .then(data => ({ word, synonym: data[0]?.word || null }))
+            .catch(() => ({ word, synonym: null }))
+        )
+      );
+
+      // Cache results
+      results.forEach(({ word, synonym }) => {
+        if (synonym) synonymCache[word] = synonym;
+      });
+    } catch (error) {
+      console.error("Batch synonym error:", error);
     }
-  </script>
+  }
+
+  // Helper function to split text into chunks
+  function splitIntoChunks(text, chunkSize) {
+    const words = text.split(/\s+/);
+    const chunks = [];
+    
+    for (let i = 0; i < words.length; i += chunkSize) {
+      chunks.push(words.slice(i, i + chunkSize).join(' '));
+    }
+    
+    return chunks;
+  }
+
+  // UI Helpers
+  function scrollToOutput() {
+    outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function copyToClipboard() {
+    const text = outputText.textContent;
+    if (!text || text.includes("Your rephrased text")) {
+      alert("Nothing to copy!");
+      return;
+    }
+    
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy Result", 2000);
+      })
+      .catch(err => {
+        console.error("Copy failed:", err);
+        alert("Failed to copy text");
+      });
+  }
+
+  // Auto-expand textarea
+  inputText.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+  });
+</script>
+
 </body>
 </html>
