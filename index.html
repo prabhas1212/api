@@ -1,0 +1,131 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Content Bypass Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+        button { padding: 10px 20px; }
+        #output { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>AI Content Bypass Tool</h1>
+    <textarea id="inputText" placeholder="Enter AI-generated text here..."></textarea>
+    <button onclick="humanizeText()">Humanize Text</button>
+    <div id="output"></div>
+
+    <script>
+        // Simple synonym dictionary
+        const synonyms = {
+            "good": ["great", "excellent", "wonderful"],
+            "bad": ["poor", "awful", "terrible"],
+            "big": ["large", "huge", "massive"],
+            "small": ["tiny", "little", "petite"],
+            "said": ["stated", "mentioned", "remarked"]
+        };
+
+        function getSynonym(word) {
+            // Return a random synonym if available
+            return synonyms[word.toLowerCase()] ? 
+                synonyms[word.toLowerCase()][Math.floor(Math.random() * synonyms[word.toLowerCase()].length)] : 
+                word;
+        }
+
+        function varySentenceLength(sentences) {
+            // Vary sentence lengths by splitting or combining
+            let result = [];
+            for (let i = 0; i < sentences.length; i++) {
+                if (Math.random() < 0.3 && i + 1 < sentences.length) {
+                    // Combine sentences
+                    result.push(sentences[i] + " What's more, " + sentences[i + 1]);
+                    i++;
+                } else if (Math.random() < 0.2 && sentences[i].split(" ").length > 10) {
+                    // Split long sentences
+                    let words = sentences[i].split(" ");
+                    let mid = Math.floor(words.length / 2);
+                    result.push(words.slice(0, mid).join(" ") + ".");
+                    result.push(words.slice(mid).join(" ") + ".");
+                } else {
+                    result.push(sentences[i]);
+                }
+            }
+            return result;
+        }
+
+        function humanizeText() {
+            const input = document.getElementById("inputText").value;
+            if (!input.trim()) {
+                document.getElementById("output").innerText = "Please enter some text.";
+                return;
+            }
+
+            // Split into sentences
+            let sentences = input.match(/[^.!?]+[.!?]+/g) || [input];
+            sentences = sentences.map(s => s.trim());
+
+            // Paraphrase by replacing words with synonyms
+            let paraphrased = sentences.map(sentence => {
+                return sentence.split(" ").map(word => {
+                    return Math.random() < 0.3 && word.length > 3 ? getSynonym(word) : word;
+                }).join(" ");
+            });
+
+            // Vary sentence lengths
+            let humanized = varySentenceLength(paraphrased);
+
+            // Add human-like quirks
+            humanized = humanized.map(sentence => {
+                if (Math.random() < 0.2) {
+                    sentence = "By the way, " + sentence.charAt(0).toLowerCase() + sentence.slice(1);
+                }
+                return sentence.replace(/ is /g, "'s ");
+            });
+
+            // Display output
+            document.getElementById("output").innerText = humanized.join(" ");
+        }
+    </script>
+</body>
+</html>
