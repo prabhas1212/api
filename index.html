@@ -3,318 +3,282 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Text Paraphrasing Tool</title>
+  <title>⚡ Smart Rephraser Pro</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    
+:root {
+      --primary: #4a6bff;
+      --primary-hover: #3a56e0;
+      --background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      --card-bg: rgba(255, 255, 255, 0.98);
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 20px;
-      background-color: #f4f4f9;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+      background: var(--background);
+      color: #333;
+      line-height: 1.6;
     }
 
     .container {
       max-width: 800px;
-      margin: auto;
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+      animation: fadeIn 0.6s ease-out;
     }
 
-    h1 {
+    h2 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
       text-align: center;
-      color: #333;
+      background: linear-gradient(90deg, #4a6bff, #00c6ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
-    textarea {
+    .input-section {
+      position: relative;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    #inputContent {
       width: 100%;
-      height: 150px;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-sizing: border-box;
-      resize: vertical;
+      min-height: 300px;
+      padding: 1.5rem;
+      font-size: 1.1rem;
+      border: none;
+      background: var(--card-bg);
+      resize: none;
+      transition: all 0.3s ease;
+      line-height: 1.6;
+      font-family: inherit;
+      white-space: pre-wrap;
     }
 
-    .button-group {
-      text-align: center;
-      margin-top: 20px;
+    #inputContent:focus {
+      outline: none;
+      box-shadow: 0 4px 20px rgba(74, 107, 255, 0.2);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     button {
-      background-color: #007bff;
+      flex: 1;
+      padding: 1rem;
+      font-size: 1.1rem;
+      background: var(--primary);
       color: white;
-      padding: 10px 20px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
-      margin: 10px;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      font-weight: 600;
     }
 
     button:hover {
-      background-color: #0056b3;
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(74, 107, 255, 0.4);
     }
 
-    .loading {
-      background-color: #888;
-      cursor: not-allowed;
+    button:active {
+      transform: translateY(0);
     }
 
-    #progressContainer {
-      margin-top: 10px;
-      width: 100%;
-      height: 5px;
-      background-color: #f1f1f1;
-      border-radius: 5px;
-      display: none;
+    .output {
+      margin-top: 2rem;
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
     }
 
-    #progress {
-      height: 100%;
-      background-color: #28a745;
-      width: 0;
-      border-radius: 5px;
+    .output h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
 
-    .output-section {
-      display: none;
-      margin-top: 30px;
-      padding: 20px;
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    .output-content {
+      white-space: pre-wrap;
+      font-size: 1.1rem;
+      line-height: 1.6;
     }
 
-    .output-section.visible {
-      display: block;
+    .bold-heading {
+      font-weight: 800;
+      font-size: 1.3em;
     }
 
-    .copy-btn {
-      display: inline-block;
-      background-color: #28a745;
-      padding: 10px 20px;
-      margin-top: 10px;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
 
-    .copy-btn:hover {
-      background-color: #218838;
-    }
+      h2 {
+        font-size: 2rem;
+      }
 
-    .word-count {
-      text-align: center;
-      margin-top: 10px;
+      #inputContent {
+        padding: 1rem;
+        min-height: 200px;
+      }
     }
-
+    
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Text Paraphrasing Tool</h1>
-    <div>
-      <textarea id="inputText" placeholder="Paste the content here"></textarea>
-      <div class="word-count">
-        Word count: <span id="wordCount">0</span>
-      </div>
+    <h2>⚡ Smart Rephraser Pro</h2>
+    <div class="input-section">
+      <textarea id="inputContent" placeholder="Paste your content here..."></textarea>
     </div>
 
-    <div class="button-group">
-      <button id="rephraseBtn" onclick="rephraseText()">Rephrase</button>
-      <button id="copyBtn" class="copy-btn" onclick="copyToClipboard()" disabled>Copy Result</button>
+    <div class="controls">
+      <button onclick="rephraseContent()">Rephrase Content</button>
+      <button onclick="copyOutput()">Copy Output</button>
     </div>
 
-    <div id="progressContainer">
-      <div id="progress"></div>
-    </div>
-
-    <div class="output-section" id="outputSection">
-      <h3>Rephrased Text</h3>
-      <pre id="outputText"></pre>
+    <div class="output">
+      <h3>Rephrased Output:</h3>
+      <div id="outputContent" class="output-content">Your rephrased content will appear here...</div>
     </div>
   </div>
 
   <script>
-    // Global variables
-    const synonymCache = {};
+    const input = document.getElementById("inputContent");
+    const output = document.getElementById("outputContent");
     const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
-    const MAX_CHUNK_SIZE = 300; // Optimal balance between performance and responsiveness
+    const synonymCache = {};
 
-    // DOM elements
-    const inputText = document.getElementById("inputText");
-    const outputText = document.getElementById("outputText");
-    const rephraseBtn = document.getElementById("rephraseBtn");
-    const copyBtn = document.getElementById("copyBtn");
-    const progressBar = document.getElementById("progress");
-    const progressContainer = document.getElementById("progressContainer");
-    const wordCountDisplay = document.getElementById("wordCount");
-    const outputSection = document.getElementById("outputSection");
-
-    // Initialize
-    inputText.addEventListener("input", updateWordCount);
-    updateWordCount();
-
-    // Word counter
-    function updateWordCount() {
-      const text = inputText.value.trim();
-      const count = text ? text.split(/\s+/).length : 0;
-      wordCountDisplay.textContent = count;
-    }
-
-    // Check if the word is a proper noun, acronym, or number
-    function isSpecialWord(word) {
-      // Checks if the word is a number or contains digits
-      if (/\d/.test(word)) return true;
+    function protectText(text) {
+      const replacements = [];
       
-      // Checks if it's an acronym or proper noun (capitalized word in the middle of text)
-      return /^[A-Z][a-zA-Z]*$/.test(word) || /^[A-Z]{2,}$/.test(word);
-    }
-
-    // Main rephrasing function
-    async function rephraseText() {
-      const text = inputText.value.trim();
-      if (!text) return alert('Please enter some text to rephrase!');
-
-      // UI Setup
-      rephraseBtn.classList.add("loading");
-      rephraseBtn.disabled = true;
-      copyBtn.disabled = true;
-      progressContainer.style.display = "block";
-      outputSection.classList.remove("visible");
-
-      try {
-        // Process in chunks for better performance
-        const chunks = splitIntoChunks(text, MAX_CHUNK_SIZE);
-        let result = [];
-        
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-          const processed = await processChunk(chunk);
-          result.push(processed);
-          
-          // Update progress
-          const progress = ((i + 1) / chunks.length) * 100;
-          progressBar.style.width = `${progress}%`;
-          
-          // Partial output update for better UX
-          if (i % 3 === 0 || i === chunks.length - 1) {
-            outputText.textContent = result.join(" ") + (i < chunks.length - 1 ? "..." : "");
-            outputSection.classList.add("visible");
-            scrollToOutput();
+      // Protected terms and patterns (add more as needed)
+      const protectionRules = [
+        { 
+          pattern: /\bUniversity of Metaphysical Sciences\b/gi,
+          replacement: () => `__PROTECTED_${replacements.push('University of Metaphysical Sciences') - 1}__`
+        },
+        { 
+          pattern: /\bUMS\b/gi,
+          replacement: () => `__PROTECTED_${replacements.push('UMS') - 1}__`
+        },
+        { 
+          pattern: /\b[A-Z]{2,}\b/g,
+          replacement: (match) => {
+            if (!match.startsWith('__PROTECTED_')) {
+              return `__PROTECTED_${replacements.push(match) - 1}__`;
+            }
+            return match;
           }
+        },
+        { 
+          pattern: /\b\d+\b/g,
+          replacement: (match) => `__PROTECTED_${replacements.push(match) - 1}__`
         }
-        
-        outputText.textContent = result.join(" ");
-        outputSection.classList.add("visible");
-      } catch (error) {
-        console.error("Rephrasing error:", error);
-        alert("An error occurred during rephrasing. Please try again.");
-      } finally {
-        rephraseBtn.classList.remove("loading");
-        rephraseBtn.disabled = false;
-        copyBtn.disabled = false;
+      ];
+
+      let protectedText = text;
+      for (const rule of protectionRules) {
+        protectedText = protectedText.replace(rule.pattern, rule.replacement);
       }
+
+      return { protectedText, replacements };
     }
 
-    // Process a single chunk of text
-    async function processChunk(text) {
-      // First get all candidate words for replacement
-      const words = text.split(/(\w+|\W+)/).filter(Boolean);
-      const wordsToReplace = words.filter(word => {
-        const cleanWord = word.replace(/\W/g, '');
-        return cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase()) && !isSpecialWord(word);
+    function restoreProtectedText(processedText, replacements) {
+      return processedText.replace(/__PROTECTED_(\d+)__/g, (_, index) => 
+        replacements[parseInt(index)] || ''
+      );
+    }
+
+    async function rephraseContent() {
+      const originalText = input.value;
+      const { protectedText, replacements } = protectText(originalText);
+      const lines = protectedText.split(/\n/);
+      const processedLines = [];
+      
+      for (const line of lines) {
+        if (/^\s*$/.test(line)) {
+          processedLines.push("\n");
+        } else if (/^(#+|\s*[A-Z][^.!?\n]{0,80})$/.test(line.trim())) {
+          processedLines.push(`<div class="bold-heading">${line}</div>\n`);
+        } else {
+          processedLines.push(await rephraseLine(line) + "\n");
+        }
+      }
+
+      let processedText = processedLines.join('');
+      processedText = restoreProtectedText(processedText, replacements);
+      output.innerHTML = processedText;
+    }
+
+    async function rephraseLine(line) {
+      const words = line.split(/(\w+|\W+)/).filter(Boolean);
+      const toReplace = words.filter(word => {
+        if (word.startsWith('__PROTECTED_')) return false;
+        const clean = word.replace(/\W/g, '').toLowerCase();
+        return clean.length > 3 && !stopWords.has(clean);
       });
 
-      // Batch fetch synonyms
-      await fetchSynonymsBatch(wordsToReplace);
+      await fetchSynonymsBatch(toReplace);
 
-      // Process each word with cached synonyms
       return words.map(word => {
-        const cleanWord = word.replace(/\W/g, '');
-        if (cleanWord.length > 3 && !stopWords.has(cleanWord.toLowerCase()) && !isSpecialWord(word)) {
-          const synonym = synonymCache[cleanWord.toLowerCase()] || word;
-          // Preserve original capitalization
-          return /^[A-Z]/.test(word) ? 
-            synonym.charAt(0).toUpperCase() + synonym.slice(1) : 
-            synonym;
+        if (word.startsWith('__PROTECTED_')) return word;
+        const clean = word.replace(/\W/g, '').toLowerCase();
+        if (clean.length > 3 && !stopWords.has(clean) && synonymCache[clean]) {
+          const replacement = synonymCache[clean];
+          return /^[A-Z]/.test(word) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
         }
         return word;
-      }).join(' ');
+      }).join('');
     }
 
-    // Batch fetch synonyms from API
     async function fetchSynonymsBatch(words) {
-      const uniqueWords = [...new Set(words
-        .map(word => word.toLowerCase())
-        .filter(word => !synonymCache[word] && word.length > 3)
-      )];
+      const unique = [...new Set(words.map(w => w.toLowerCase()).filter(w => !synonymCache[w]))];
+      await Promise.all(unique.map(word =>
+        fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
+          .then(res => res.json())
+          .then(data => {
+            if (data[0]?.word) synonymCache[word] = data[0].word;
+          })
+          .catch(() => {})
+      ));
+    }
 
-      if (uniqueWords.length === 0) return;
+    function copyOutput() {
+      const range = document.createRange();
+      range.selectNode(output);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
 
       try {
-        // Batch API call (note: Datamuse doesn't support true batching, this is a mock)
-        const results = await Promise.all(
-          uniqueWords.map(word => 
-            fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
-              .then(res => res.json())
-              .then(data => ({ word, synonym: data[0]?.word || null }))
-              .catch(() => ({ word, synonym: null }))
-          )
-        );
-
-        // Cache results
-        results.forEach(({ word, synonym }) => {
-          if (synonym) synonymCache[word] = synonym;
-        });
-      } catch (error) {
-        console.error("Batch synonym error:", error);
+        document.execCommand("copy");
+        alert("Rephrased content copied to clipboard!");
+      } catch (err) {
+        alert("Failed to copy text.");
       }
-    }
 
-    // Helper function to split text into chunks
-    function splitIntoChunks(text, chunkSize) {
-      const words = text.split(/\s+/);
-      const chunks = [];
-      
-      for (let i = 0; i < words.length; i += chunkSize) {
-        chunks.push(words.slice(i, i + chunkSize).join(' '));
-      }
-      
-      return chunks;
+      selection.removeAllRanges();
     }
-
-    // UI Helpers
-    function scrollToOutput() {
-      outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function copyToClipboard() {
-      const text = outputText.textContent;
-      if (!text || text.includes("Your rephrased text")) {
-        alert("Nothing to copy!");
-        return;
-      }
-      
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          copyBtn.textContent = "Copied!";
-          setTimeout(() => copyBtn.textContent = "Copy Result", 2000);
-        })
-        .catch(err => {
-          console.error("Copy failed:", err);
-          alert("Failed to copy text");
-        });
-    }
-
-    // Auto-expand textarea
-    inputText.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = this.scrollHeight + 'px';
-    });
   </script>
 </body>
 </html>
