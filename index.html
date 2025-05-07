@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⚡ Smart Rephraser Pro</title>
   <style>
-    
-:root {
+    :root {
       --primary: #4a6bff;
       --primary-hover: #3a56e0;
       --background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -140,7 +139,6 @@
         min-height: 200px;
       }
     }
-    
   </style>
 </head>
 <body>
@@ -167,20 +165,34 @@
     const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
     const synonymCache = {};
 
+    const protectedPhrases = [
+      "Curriculum Vitae",
+      "Probationary Officer"
+    ];
+
     function protectText(text) {
       const replacements = [];
-      
-      // Protected terms and patterns (add more as needed)
+
+      // Protect phrases like "Curriculum Vitae" or "Probationary Officer"
+      protectedPhrases.forEach(phrase => {
+        const regex = new RegExp(`\\b${phrase.replace(/ /g, '\\s+')}\\b`, 'gi');
+        text = text.replace(regex, () => `__PROTECTED_${replacements.push(phrase) - 1}__`);
+      });
+
+      // Protect quoted strings
+      text = text.replace(/"([^"]+)"/g, (_, match) => `__PROTECTED_${replacements.push(`"${match}"`) - 1}__`);
+
+      // Protect other patterns
       const protectionRules = [
-        { 
+        {
           pattern: /\bUniversity of Metaphysical Sciences\b/gi,
           replacement: () => `__PROTECTED_${replacements.push('University of Metaphysical Sciences') - 1}__`
         },
-        { 
+        {
           pattern: /\bUMS\b/gi,
           replacement: () => `__PROTECTED_${replacements.push('UMS') - 1}__`
         },
-        { 
+        {
           pattern: /\b[A-Z]{2,}\b/g,
           replacement: (match) => {
             if (!match.startsWith('__PROTECTED_')) {
@@ -189,22 +201,21 @@
             return match;
           }
         },
-        { 
+        {
           pattern: /\b\d+\b/g,
           replacement: (match) => `__PROTECTED_${replacements.push(match) - 1}__`
         }
       ];
 
-      let protectedText = text;
       for (const rule of protectionRules) {
-        protectedText = protectedText.replace(rule.pattern, rule.replacement);
+        text = text.replace(rule.pattern, rule.replacement);
       }
 
-      return { protectedText, replacements };
+      return { protectedText: text, replacements };
     }
 
     function restoreProtectedText(processedText, replacements) {
-      return processedText.replace(/__PROTECTED_(\d+)__/g, (_, index) => 
+      return processedText.replace(/__PROTECTED_(\d+)__/g, (_, index) =>
         replacements[parseInt(index)] || ''
       );
     }
@@ -214,7 +225,7 @@
       const { protectedText, replacements } = protectText(originalText);
       const lines = protectedText.split(/\n/);
       const processedLines = [];
-      
+
       for (const line of lines) {
         if (/^\s*$/.test(line)) {
           processedLines.push("\n");
