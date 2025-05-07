@@ -12,27 +12,29 @@
       --card-bg: rgba(255, 255, 255, 0.98);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--background);
       min-height: 100vh;
       padding: 2rem;
-      background: var(--background);
       color: #333;
-      line-height: 1.6;
     }
 
     .container {
       max-width: 800px;
-      margin: 0 auto;
-      animation: fadeIn 0.6s ease-out;
+      margin: auto;
     }
 
     h2 {
+      text-align: center;
       font-size: 2.5rem;
       margin-bottom: 2rem;
-      text-align: center;
       background: linear-gradient(90deg, #4a6bff, #00c6ff);
       -webkit-background-clip: text;
       background-clip: text;
@@ -48,18 +50,20 @@
 
     textarea {
       width: 100%;
-      min-height: 150px;
-      padding: 1.5rem;
+      min-height: 180px;
       font-size: 1.1rem;
+      padding: 1.5rem;
+      resize: none;
       border: none;
       background: var(--card-bg);
-      resize: none;
       line-height: 1.6;
     }
 
-    textarea:focus {
-      outline: none;
-      box-shadow: 0 4px 20px rgba(74, 107, 255, 0.2);
+    .word-count {
+      text-align: right;
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+      color: #666;
     }
 
     .controls {
@@ -73,14 +77,13 @@
       padding: 1rem;
       font-size: 1.1rem;
       background: var(--primary);
-      color: white;
+      color: #fff;
+      font-weight: 600;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: 600;
-      position: relative;
-      overflow: hidden;
       transition: all 0.3s ease;
+      position: relative;
     }
 
     button:hover {
@@ -88,8 +91,6 @@
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(74, 107, 255, 0.4);
     }
-
-    button:active { transform: translateY(0); }
 
     button.loading::after {
       content: "";
@@ -106,13 +107,12 @@
     }
 
     .progress-container {
-      width: 100%;
       height: 6px;
       background: rgba(0,0,0,0.05);
       border-radius: 3px;
-      margin: 1rem 0;
       overflow: hidden;
       display: none;
+      margin-bottom: 1rem;
     }
 
     #progress {
@@ -123,11 +123,12 @@
     }
 
     .output {
-      margin-top: 2rem;
       background: var(--card-bg);
       padding: 2rem;
       border-radius: 12px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      white-space: pre-wrap;
+      line-height: 1.6;
       opacity: 0;
       transform: translateY(20px);
       transition: all 0.4s ease;
@@ -138,43 +139,29 @@
       transform: translateY(0);
     }
 
-    #outputText {
-      font-size: 1.1rem;
-      white-space: pre-wrap;
-      animation: textReveal 0.6s ease-out;
-    }
-
-    .word-count {
-      text-align: right;
-      color: #666;
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .heading {
+      font-weight: 800;
+      display: block;
+      margin-top: 1rem;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    @keyframes textReveal {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
     @media (max-width: 768px) {
-      body { padding: 1rem; }
-      h2 { font-size: 2rem; }
-      textarea { padding: 1rem; min-height: 120px; }
-      .controls { flex-direction: column; }
-      .output { padding: 1.5rem; }
-    }
+      textarea {
+        padding: 1rem;
+        min-height: 120px;
+      }
 
-    @media (max-width: 480px) {
-      button { padding: 0.8rem; font-size: 1rem; }
+      .controls {
+        flex-direction: column;
+      }
+
+      .output {
+        padding: 1.5rem;
+      }
     }
   </style>
 </head>
@@ -183,7 +170,7 @@
     <h2>⚡ Smart Rephraser Pro</h2>
 
     <div class="input-section">
-      <textarea id="inputText" placeholder="Enter your text here..." autofocus></textarea>
+      <textarea id="inputText" placeholder="Paste your content here..."></textarea>
       <div class="word-count"><span id="wordCount">0</span> words</div>
     </div>
 
@@ -197,8 +184,7 @@
     </div>
 
     <div class="output" id="outputSection">
-      <h3>Rephrased Output:</h3>
-      <pre id="outputText">Your rephrased text will appear here...</pre>
+      <div id="outputText">Your rephrased text will appear here...</div>
     </div>
   </div>
 
@@ -211,68 +197,76 @@
     const progressContainer = document.getElementById("progressContainer");
     const outputSection = document.getElementById("outputSection");
     const wordCountDisplay = document.getElementById("wordCount");
-
-    const synonymCache = {};
     const stopWords = new Set(["the", "and", "is", "are", "in", "on", "at", "a", "to", "of", "for", "with", "that", "this"]);
+    const synonymCache = {};
 
-    inputText.addEventListener("input", updateWordCount);
-    updateWordCount();
+    inputText.addEventListener("input", () => {
+      wordCountDisplay.textContent = inputText.value.trim().split(/\s+/).filter(w => w).length;
+      autoResize();
+    });
 
-    function updateWordCount() {
-      const text = inputText.value.trim();
-      const count = text ? text.split(/\s+/).length : 0;
-      wordCountDisplay.textContent = count;
+    function autoResize() {
+      inputText.style.height = "auto";
+      inputText.style.height = inputText.scrollHeight + "px";
+    }
+
+    function copyToClipboard() {
+      const text = outputText.innerText;
+      if (!text || text.includes("Your rephrased text")) return alert("Nothing to copy!");
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy Result", 2000);
+      });
     }
 
     async function rephraseText() {
-      const text = inputText.value;
-      if (!text.trim()) return alert("Please enter some text to rephrase!");
+      const text = inputText.value.trim();
+      if (!text) return alert("Please enter some text.");
 
       rephraseBtn.classList.add("loading");
       rephraseBtn.disabled = true;
       copyBtn.disabled = true;
       progressContainer.style.display = "block";
       outputSection.classList.remove("visible");
+      progressBar.style.width = "0%";
 
-      try {
-        const lines = text.split(/\r?\n/);
-        const total = lines.length;
-        let rephrasedLines = [];
+      const lines = text.split(/\n+/);
+      let result = [];
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          const rephrased = await processChunk(line);
-          rephrasedLines.push(rephrased);
-          progressBar.style.width = ((i + 1) / total * 100) + "%";
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const isHeading = /^[A-Z \d:]+$/.test(line.trim()) || /:$/.test(line.trim());
+        if (!line.trim()) {
+          result.push("");
+        } else if (isHeading) {
+          result.push(`<span class="heading">${line}</span>`);
+        } else {
+          const paraphrased = await processChunk(line);
+          result.push(paraphrased);
         }
-
-        outputText.textContent = rephrasedLines.join("\n");
-        outputSection.classList.add("visible");
-        scrollToOutput();
-
-      } catch (error) {
-        console.error("Rephrasing error:", error);
-        alert("An error occurred during rephrasing.");
-      } finally {
-        rephraseBtn.classList.remove("loading");
-        rephraseBtn.disabled = false;
-        copyBtn.disabled = false;
+        progressBar.style.width = `${((i + 1) / lines.length) * 100}%`;
       }
+
+      outputText.innerHTML = result.join("\n\n");
+      outputSection.classList.add("visible");
+      rephraseBtn.classList.remove("loading");
+      rephraseBtn.disabled = false;
+      copyBtn.disabled = false;
     }
 
     async function processChunk(text) {
       const words = text.split(/(\w+|\W+)/).filter(Boolean);
-      const toReplace = words.filter(w => {
-        const clean = w.replace(/\W/g, '');
-        return clean.length > 3 && !stopWords.has(clean.toLowerCase());
+      const targets = words.filter(w => {
+        const plain = w.replace(/\W/g, '');
+        return plain.length > 3 && !stopWords.has(plain.toLowerCase());
       });
 
-      await fetchSynonymsBatch(toReplace);
+      await fetchSynonymsBatch(targets);
 
       return words.map(w => {
         const clean = w.replace(/\W/g, '');
-        const synonym = synonymCache[clean.toLowerCase()];
-        if (clean.length > 3 && synonym && !stopWords.has(clean.toLowerCase())) {
+        if (clean.length > 3 && !stopWords.has(clean.toLowerCase())) {
+          const synonym = synonymCache[clean.toLowerCase()] || w;
           return /^[A-Z]/.test(w) ? synonym.charAt(0).toUpperCase() + synonym.slice(1) : synonym;
         }
         return w;
@@ -280,44 +274,24 @@
     }
 
     async function fetchSynonymsBatch(words) {
-      const uniqueWords = [...new Set(words.map(w => w.toLowerCase()).filter(w => !synonymCache[w] && w.length > 3))];
-      if (uniqueWords.length === 0) return;
+      const unique = [...new Set(words.map(w => w.toLowerCase().replace(/\W/g, '')).filter(w => !synonymCache[w]))];
+      if (unique.length === 0) return;
 
-      const results = await Promise.all(uniqueWords.map(word =>
-        fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
-          .then(res => res.json())
-          .then(data => ({ word, synonym: data[0]?.word || null }))
-          .catch(() => ({ word, synonym: null }))
-      ));
+      try {
+        const results = await Promise.all(
+          unique.map(word =>
+            fetch(`https://api.datamuse.com/words?rel_syn=${word}&max=1`)
+              .then(res => res.json())
+              .then(data => ({ word, synonym: data[0]?.word || word }))
+              .catch(() => ({ word, synonym: word }))
+          )
+        );
 
-      results.forEach(({ word, synonym }) => {
-        if (synonym) synonymCache[word] = synonym;
-      });
-    }
-
-    function scrollToOutput() {
-      outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function copyToClipboard() {
-      const text = outputText.textContent;
-      if (!text || text.includes("Your rephrased text")) {
-        alert("Nothing to copy!");
-        return;
+        results.forEach(({ word, synonym }) => synonymCache[word] = synonym);
+      } catch (err) {
+        console.error("Synonym fetch failed:", err);
       }
-
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          copyBtn.textContent = "Copied!";
-          setTimeout(() => copyBtn.textContent = "Copy Result", 2000);
-        })
-        .catch(() => alert("Copy failed."));
     }
-
-    inputText.addEventListener('input', function () {
-      this.style.height = 'auto';
-      this.style.height = this.scrollHeight + 'px';
-    });
   </script>
 </body>
 </html>
